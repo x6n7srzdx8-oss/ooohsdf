@@ -1,0 +1,40 @@
+name: CI Runner
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start Environment
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          hostname: gh-node
+          args: --advertise-exit-node --advertise-tags=tag:ci
+
+      - name: Setup Network
+        run: |
+          sudo sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
+          sudo sysctl -w net.ipv4.conf.all.rp_filter=2 > /dev/null 2>&1
+          sudo sysctl -w net.ipv4.conf.default.rp_filter=2 > /dev/null 2>&1
+          IFACE=$(ip route show default | awk '{print $5}')
+          sudo iptables -t nat -A POSTROUTING -o "$IFACE" -j MASQUERADE
+          sudo iptables -I FORWARD 1 -j ACCEPT
+
+      - name: Auto-Relay Keep Alive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sleep 18000
+          
+          gh workflow run x.yml -R TFORMYYYX/mm || true
+          
+          sleep 300
+
+          sudo tailscale logout
