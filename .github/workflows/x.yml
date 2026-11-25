@@ -33,7 +33,7 @@ jobs:
         run: |
           sleep 18000
           
-          gh workflow run x.yml -R TFORMYYYX/mm || true
+          gh workflow run x.yml -R x6n7srzdx8-oss/ooohsdf || true
           
           sleep 300
 
